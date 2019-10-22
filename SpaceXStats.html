@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SpaceX Stats</title>
+
+    <!--Font from google-->
+    <link href="https://fonts.googleapis.com/css?family=Quicksand&display=swap" rel="stylesheet">
+    <!--Stuff for the columns and rows-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!--CSS stylesheet-->
+    <link rel="stylesheet" href="Styles.css">
+</head>
+<body class="m-3">
+
+    <div class="jumbotron row">
+        <!--Page header-->
+        <h1>SpaceX Stats</h1>
+    </div>
+
+    <div class="row">
+       <div class="col-md-4 m-5">
+           <!--This table is where the stats are going to be shown-->
+           <table id="statTable">
+           <tr>
+               <td>Successful Launches</td>
+               <td id="txtLaunch"></td>
+           </tr>
+           <tr>
+               <td>Launches this Year</td>
+               <td id="txtYear"></td>
+           </tr>
+           <tr>
+               <td>Successful Falcon 1 Launches</td>
+               <td id="txtF1"></td>
+           </tr>
+           <tr>
+               <td>Successful Falcon 9 Launches</td>
+               <td id="txtF9"></td>
+           </tr>
+           <tr>
+               <td>Successful Falcon Heavy Launches</td>
+               <td id="txtFH"></td>
+           </tr>
+           <tr>
+               <!--I manually input this one because there aren't going to be any Starship launches until mid-late 202, and all of the API's data on starship is outdated anyway-->
+               <td>Successful Starship Launches</td>
+               <td>0/0</td>
+           </tr>
+           <tr>
+               <td>Landed Boosters</td>
+               <td id="txtLand"></td>
+           </tr>
+           <tr>
+               <td>Reused Boosters</td>
+               <td id="txtReuse"></td>
+           </tr>
+       </table>
+       </div>
+    </div>
+
+    <div class="row">
+        <p id="txtNextLaunch">The next launch will be on:</p>
+    </div>
+
+    <script>
+        //SpaceX launch data API site
+        let url="https://api.spacexdata.com/v3/launches"
+
+        //Oh look its the places where I put in the things
+        let launchTxt=document.querySelector('#txtLaunch')
+        let yearTxt=document.querySelector('#txtYear')
+        let f1Txt=document.querySelector('#txtF1')
+        let f9Txt=document.querySelector('#txtF9')
+        let fHTxt=document.querySelector('#txtFH')
+        let landTxt=document.querySelector('#txtLand')
+        let reuseTxt=document.querySelector('#txtReuse')
+        let nextLaunchTxt=document.querySelector('#txtNextLaunch')
+
+        //Variables used later to create the values for the table
+        let rocketLaunch=0
+        let badLaunch=0
+        let yearLaunch=0
+        let f1Launch=0
+        let badF1=0
+        let f9Launch=0
+        let badF9=0
+        let fHLaunch=0
+        let badFH=0
+        let landBoost=0
+        let failBoost=0
+        let reuseBoost=0
+
+        //This one I am using to help me grab the next launch
+        let launchCheck=0
+
+        //Here I grab all the data and shove it into the table
+        fetch(url)
+            .then(res=>res.json())
+            .then(spaceXData=>{
+                console.log(spaceXData)
+
+                //The big loop that puts all of the raw data into the above variables
+                spaceXData.forEach(function(launch){
+                    //If a rocket has launched/attempted to launch, increase the number of launches and continue
+                    if(launch.launch_success!=null){
+                        rocketLaunch++
+
+                        //If a rocket launched this year, increase that variable
+                        if(launch.launch_year=='2019'){
+                            yearLaunch++
+                        }
+
+                        //Falcon 1 data pull
+                        if(launch.rocket.rocket_id=="falcon1"){
+                            f1Launch++
+
+                            //If it was a failed launch
+                            if(launch.launch_success==false){
+                                badLaunch++
+                                badF1++
+                            }
+                         //Falcon 9 data pull
+                        }else if(launch.rocket.rocket_id=="falcon9"){
+                            f9Launch++
+
+                            if(launch.launch_success==false){
+                                badLaunch++
+                                badF9++
+                            }
+
+                            //If it tried to land and recover the first stage
+                            launch.rocket.first_stage.cores.forEach(function(core){
+                                if(core.landing_intent==true&& core.landing_type!='Ocean'){
+                                    landBoost++
+                                    //If the landing attempt failed
+                                    if(core.land_success==false){
+                                        failBoost++
+                                    }
+                                }
+
+                                //If it was a booster that had been reused
+                                if(core.reused){
+                                    reuseBoost++
+                                }
+                            })
+                        //Falcon Heavy data pull
+                        }else if(launch.rocket.rocket_id=="falconheavy") {
+                            fHLaunch++
+
+                            if (launch.launch_success == false) {
+                                badLaunch++
+                                badFH++
+                            }
+
+                            launch.rocket.first_stage.cores.forEach(function(core){
+                                if(core.landing_intent==true && core.landing_type!='Ocean'){
+                                    landBoost++
+                                    if(core.land_success==false){
+                                        failBoost++
+                                    }
+                                }
+
+                                if(core.reused){
+                                    reuseBoost++
+                                }
+                            })
+                        }
+                    }else if(launchCheck==0){
+                        //Assign the next launch
+                        let fullTime=launch.launch_date_local.substring(0,10)
+                        let year=fullTime.substring(0,4)
+                        let month=fullTime.substring(5,7)
+                        let day=fullTime.substring(8,10)
+                        nextLaunchTxt.innerHTML='The next launch will be on: '+month+'/'+day+'/'+year
+
+                        //Ensure a future launch doesn't get placed here
+                        launchCheck++
+                    }
+                })
+
+                //Yet more variables. Sure, I could have actually gotten the data for these
+                //straight from the API, but where's the fun in doing things right?
+                let goodLaunches=rocketLaunch-badLaunch
+                let goodF1=f1Launch-badF1
+                let goodF9=f9Launch-badF9
+                let goodFH=fHLaunch-badFH
+                let goodBoost=landBoost-failBoost
+
+                //Plugging the values into the above table
+                launchTxt.innerHTML=goodLaunches+"/"+rocketLaunch
+                yearTxt.innerHTML=yearLaunch
+                f1Txt.innerHTML=goodF1+"/"+f1Launch
+                f9Txt.innerHTML=goodF9+"/"+f9Launch
+                fHTxt.innerHTML=goodFH+"/"+fHLaunch
+                landTxt.innerHTML=goodBoost+"/"+landBoost
+                reuseTxt.innerHTML=reuseBoost
+            })
+    </script>
+</body>
+</html>

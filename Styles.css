@@ -1,0 +1,20 @@
+body{
+    background-color: #4f4f4f;
+}
+.jumbotron{
+    background-color:#333333;
+    border-style: solid;
+    border-color: white;
+}
+h1{
+    font-family:Quicksand, medium;
+    text-align: center;
+    color: white;
+}
+table, tr{
+    border: 2px white solid;
+}
+td,p{
+    font-family: Quicksand, light;
+    color: white;
+}
